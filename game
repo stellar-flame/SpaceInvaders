@@ -1,0 +1,126 @@
+import os
+import pygame
+from pygame.math import Vector2
+
+os.environ['SDL_VIDEO_CENTERED'] = '1'
+
+
+class AlienShip:
+    ALIEN_SPAWN_EVENT = pygame.USEREVENT + 1
+    TEXTURE = pygame.image.load("assets/alien.png")
+
+    def __init__(self):
+        self.pos = Vector2(16, 0)
+        self.speed = 5
+        self.direction = -1
+
+    def update(self, boundaries, delta):
+        self.pos.x += self.direction * self.speed * delta
+
+        if ((self.pos.x < 0 and self.direction == -1) or
+                (self.pos.x > boundaries.x-1 and self.direction == 1)) :
+            self.pos.y += 1
+            self.direction *= -1
+
+
+class SpaceShip:
+    TEXTURE = pygame.image.load("assets/ship.png")
+
+    def __init__(self):
+        self.pos = Vector2(0, 8)
+
+    def move(self, move_command, boundaries):
+        self.pos += move_command
+
+        if self.pos.x < 0:
+            self.pos.x = 0
+        elif self.pos.x >= boundaries.x:
+            self.pos.x = boundaries.x - 1
+
+        if self.pos.y < 0:
+            self.pos.y = 0
+        elif self.pos.y >= boundaries.y:
+            self.pos.y = boundaries.y - 1
+
+
+class GameState:
+    def __init__(self):
+        self.world_size = Vector2(16, 10)
+
+
+class UserInterface:
+    def __init__(self):
+        pygame.init()
+        self.space_ship = SpaceShip()
+        self.alien_ships = []
+        pygame.time.set_timer(AlienShip.ALIEN_SPAWN_EVENT, 1000)
+
+        self.game_state = GameState()
+        self.cellSize = Vector2(64,64)
+
+        # Window
+        window_size = self.game_state.world_size.elementwise() * self.cellSize
+        self.window = pygame.display.set_mode((int(window_size.x),int(window_size.y)))
+
+        self.move_command = Vector2(0, 0)
+        # Loop properties
+        self.clock = pygame.time.Clock()
+        self.running = True
+
+    def process_input(self):
+        self.move_command = Vector2(0, 0)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+                break
+            elif event.type == AlienShip.ALIEN_SPAWN_EVENT:
+                alien_ship = AlienShip()
+                self.alien_ships.append(alien_ship)
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.running = False
+                    break
+                elif event.key == pygame.K_RIGHT:
+                    self.move_command.x = 1
+                elif event.key == pygame.K_LEFT:
+                    self.move_command.x = -1
+
+    def update(self, delta_time):
+        for ship in self.alien_ships:
+            ship.update(self.game_state.world_size, delta_time)
+
+        self.space_ship.move(self.move_command, self.game_state.world_size)
+
+    def render(self):
+        self.window.fill((0,0,0))
+
+        self.render_spaceship()
+        self.render_alien_ships()
+
+        pygame.display.update()
+
+    def render_spaceship(self):
+        sprite_point = self.space_ship.pos.elementwise() * self.cellSize
+        self.window.blit(self.space_ship.TEXTURE, sprite_point)
+
+    def render_alien_ships(self):
+        for ship in self.alien_ships:
+            sprite_point = ship.pos.elementwise() * self.cellSize
+            self.window.blit(ship.TEXTURE, sprite_point)
+
+    def run(self):
+        while self.running:
+            """the delta time is the time since the last frame which is
+            approx 1000ms/60ms (since there are 60 frames in 1 second i.e. 1000ms) then divided by 
+            1000 to get delta time in seconds"""
+
+            delta_time = self.clock.tick(60) / 1000.0
+            self.process_input()
+            self.update(delta_time)
+            self.render()
+
+
+ui = UserInterface()
+ui.run()
+
+pygame.quit()

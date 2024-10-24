@@ -1,13 +1,21 @@
 import os
 import pygame
 from pygame.math import Vector2
+from pygame.sprite import Group
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 
-class Node:
-    def __init__(self, pos):
-        self.pos = pos
+class Node(pygame.sprite.Sprite):
+    def __init__(self, grid_pos, texture):
+        super().__init__()
+        self.image = pygame.image.load(texture).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.grid_pos = grid_pos
+        self.update_pixel_pos()
+
+    def update_pixel_pos(self):
+        self.rect.topleft = Game.grid_to_pixel(self.grid_pos)
 
     def process_input(self, event):
         pass
@@ -15,40 +23,28 @@ class Node:
     def update(self, boundaries, delta):
         pass
 
-    def render(self, window, cell_size):
-        sprite_point = self.pos.elementwise() * cell_size
-        window.blit(self.get_texture(), sprite_point)
-
-    def get_texture(self):
-        pass
-
 
 class AlienShip(Node):
     ALIEN_SPAWN_EVENT = pygame.USEREVENT + 1
-    TEXTURE = pygame.image.load("assets/alien.png")
 
     def __init__(self):
-        super().__init__(Vector2(16, 0))
+        super().__init__(Vector2(16, 0), "assets/alien.png")
         self.speed = 5
         self.direction = -1
 
     def update(self, boundaries, delta):
-        self.pos.x += self.direction * self.speed * delta
+        self.grid_pos.x += self.direction * self.speed * delta
 
-        if ((self.pos.x < 0 and self.direction == -1) or
-                (self.pos.x > boundaries.x-1 and self.direction == 1)) :
-            self.pos.y += 1
+        if ((self.grid_pos.x < 0 and self.direction == -1) or
+                (self.grid_pos.x > boundaries.x and self.direction == 1)):
+            self.grid_pos.y += 1
             self.direction *= -1
 
-    def get_texture(self):
-        return AlienShip.TEXTURE
-
+        self.update_pixel_pos()
 
 class SpaceShip(Node):
-    TEXTURE = pygame.image.load("assets/ship.png")
-
     def __init__(self):
-        super().__init__(Vector2(0, 8))
+        super().__init__(Vector2(0, 8 ), "assets/ship.png")
         self.move_command = Vector2(0, 0)
 
     def process_input(self, event):
@@ -56,24 +52,22 @@ class SpaceShip(Node):
             self.move_command.x = 1
         elif event.key == pygame.K_LEFT:
             self.move_command.x = -1
+        elif event.key == pygame.K_SPACE:
+            self.shoot()
 
-    def update(self,  boundaries, delta):
-        self.pos += self.move_command
+    def shoot(self):
+        self.bullet = Bullet(Vector2(self.rect.x + Game.CELL_SIZE / 2, self.rect.y + Game.CELL_SIZE / 2))
 
-        if self.pos.x < 0:
-            self.pos.x = 0
-        elif self.pos.x >= boundaries.x:
-            self.pos.x = boundaries.x - 1
+    def update(self, boundaries, delta):
+        self.grid_pos += self.move_command
 
-        if self.pos.y < 0:
-            self.pos.y = 0
-        elif self.pos.y >= boundaries.y:
-            self.pos.y = boundaries.y - 1
-
+        if self.rect.x < 0:
+            self.rect.x = 0
+        elif self.rect.x >= boundaries.x:
+            self.rect.x = boundaries.x - 1
+        self.update_pixel_pos()
         self.move_command = Vector2(0, 0)
 
-    def get_texture(self):
-        return SpaceShip.TEXTURE
 
 class Bullet:
     def __init__(self, start_pos):
@@ -81,41 +75,45 @@ class Bullet:
         self.start_pos = start_pos
 
 
-class Scene(Node):
+class Scene:
     def __init__(self):
-        super().__init__(Vector2(0,0))
+        self.player_sprites = Group()
+        self.alien_sprites = Group()
+
         self.space_ship = SpaceShip()
-        self.alien_ships = []
+        self.player_sprites.add(self.space_ship)
+
         pygame.time.set_timer(AlienShip.ALIEN_SPAWN_EVENT, 1000)
 
     def process_input(self, event):
         if event.type == AlienShip.ALIEN_SPAWN_EVENT:
             alien_ship = AlienShip()
-            self.alien_ships.append(alien_ship)
+            self.alien_sprites.add(alien_ship)
         elif event.type == pygame.KEYDOWN:
             self.space_ship.process_input(event)
 
     def update(self, boundaries, delta):
-        for ship in self.alien_ships:
-            ship.update(boundaries, delta)
-        self.space_ship.update(boundaries, delta)
+        self.alien_sprites.update(boundaries, delta)
+        self.player_sprites.update(boundaries, delta)
 
-    def render(self, window, cell_size):
-        for ship in self.alien_ships:
-            ship.render(window, cell_size)
-        self.space_ship.render(window, cell_size)
+    def render(self, window):
+        self.alien_sprites.draw(window)
+        self.player_sprites.draw(window)
 
 
-class UserInterface:
+class Game:
+    CELL_SIZE = Vector2(64, 64)
+    WORLD_SIZE = Vector2(16, 10)
+
+    def grid_to_pixel(grid_pos: Vector2):
+        return grid_pos.elementwise() * Game.CELL_SIZE
+
     def __init__(self):
         pygame.init()
-        self.scene = Scene()
-        self.world_size = Vector2(16, 10)
-        self.cellSize = Vector2(64,64)
+        self.window_size = Game.WORLD_SIZE.elementwise() * Game.CELL_SIZE
+        self.window = pygame.display.set_mode((int(self.window_size.x), int(self.window_size.y)))
 
-        # Window
-        window_size = self.world_size.elementwise() * self.cellSize
-        self.window = pygame.display.set_mode((int(window_size.x),int(window_size.y)))
+        self.scene = Scene()
 
         # Loop properties
         self.clock = pygame.time.Clock()
@@ -130,11 +128,11 @@ class UserInterface:
                 self.scene.process_input(event)
 
     def update(self, delta_time):
-        self.scene.update(self.world_size, delta_time)
+        self.scene.update(Game.WORLD_SIZE, delta_time)
 
     def render(self):
         self.window.fill((0, 0, 0))
-        self.scene.render(self.window, self.cellSize)
+        self.scene.render(self.window)
         pygame.display.update()
 
     def run(self):
@@ -149,7 +147,6 @@ class UserInterface:
             self.render()
 
 
-ui = UserInterface()
-ui.run()
-
+game = Game()
+game.run()
 pygame.quit()

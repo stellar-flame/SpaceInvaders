@@ -7,9 +7,14 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 
 class Node(pygame.sprite.Sprite):
-    def __init__(self, grid_pos, texture):
+    def __init__(self, grid_pos, texture=None):
         super().__init__()
-        self.image = pygame.image.load(texture).convert_alpha()
+        if texture:
+            self.image = pygame.image.load(texture).convert_alpha()
+        else:
+            self.image = pygame.Surface((4, 4))  # Placeholder surface for the sprite
+            self.image.fill((255, 0, 0))  # Color the sprite red
+
         self.rect = self.image.get_rect()
         self.grid_pos = grid_pos
         self.update_pixel_pos()
@@ -52,33 +57,34 @@ class SpaceShip(Node):
             self.move_command.x = 1
         elif event.key == pygame.K_LEFT:
             self.move_command.x = -1
-        elif event.key == pygame.K_SPACE:
-            self.shoot()
-
-    def shoot(self):
-        self.bullet = Bullet(Vector2(self.rect.x + Game.CELL_SIZE / 2, self.rect.y + Game.CELL_SIZE / 2))
 
     def update(self, boundaries, delta):
         self.grid_pos += self.move_command
 
-        if self.rect.x < 0:
-            self.rect.x = 0
-        elif self.rect.x >= boundaries.x:
-            self.rect.x = boundaries.x - 1
+        if self.grid_pos.x < 0:
+            self.grid_pos.x = 0
+        elif self.grid_pos.x >= boundaries.x:
+            self.grid_pos.x = boundaries.x - 1
         self.update_pixel_pos()
         self.move_command = Vector2(0, 0)
 
 
-class Bullet:
-    def __init__(self, start_pos):
-        self.speed = 100
-        self.start_pos = start_pos
+class Bullet(Node):
+    def __init__(self, grid_pos):
+        super().__init__(grid_pos)
+        self.speed = 5
 
+    def update(self, boundaries, delta):
+        self.grid_pos.y -= self.speed * delta
+        print(self.grid_pos)
+
+        self.update_pixel_pos()
 
 class Scene:
     def __init__(self):
         self.player_sprites = Group()
         self.alien_sprites = Group()
+        self.bullet_sprites = Group()
 
         self.space_ship = SpaceShip()
         self.player_sprites.add(self.space_ship)
@@ -90,15 +96,25 @@ class Scene:
             alien_ship = AlienShip()
             self.alien_sprites.add(alien_ship)
         elif event.type == pygame.KEYDOWN:
-            self.space_ship.process_input(event)
+            if event.key == pygame.K_SPACE:
+                self.shoot()
+            else:
+                self.space_ship.process_input(event)
+
+    def shoot(self):
+        bullet_pos = Vector2(self.space_ship.grid_pos.x + 0.5, self.space_ship.grid_pos.y + 0.5)
+        bullet = Bullet(bullet_pos)
+        self.bullet_sprites.add(bullet)
 
     def update(self, boundaries, delta):
         self.alien_sprites.update(boundaries, delta)
         self.player_sprites.update(boundaries, delta)
+        self.bullet_sprites.update(boundaries, delta)
 
     def render(self, window):
         self.alien_sprites.draw(window)
         self.player_sprites.draw(window)
+        self.bullet_sprites.draw(window)
 
 
 class Game:

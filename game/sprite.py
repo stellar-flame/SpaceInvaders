@@ -2,16 +2,16 @@ import pygame
 from pygame.sprite import Sprite
 import game.utils
 
+
 class SpriteNode(Sprite):
-    def __init__(self, grid_pos, texture=None):
+    def __init__(self, grid_pos):
         super().__init__()
         self.grid_pos = grid_pos
-        self.set_texture(texture)
-        self.rect = self.image.get_rect()
-        self.update_pixel_pos()
 
     def set_texture(self, texture):
         self.image = pygame.image.load(texture).convert_alpha()
+        self.rect = self.image.get_rect()
+        self.update_pixel_pos()
 
     def update_pixel_pos(self):
         self.rect.topleft = game.utils.grid_to_pixel(self.grid_pos)
@@ -22,15 +22,15 @@ class SpriteNode(Sprite):
 
 class AnimatedSprite(SpriteNode):
     def __init__(self, grid_pos, texture, frame_rate, frame_width, frame_height, num_frames, loop=True):
+        super().__init__(grid_pos)
         self.images = self.load_sprite_sheet(texture, frame_width, frame_height, num_frames)
         self.frame_rate = frame_rate  # How many frames to wait before switching frames
         self.timer = 0
         self.current_frame = 0
         self.loop = loop
-        super().__init__(grid_pos)
-
-    def set_texture(self, texture):
         self.image = self.images[self.current_frame]  # Set the initial image
+        self.rect = self.image.get_rect()
+        self.update_pixel_pos()
 
     def load_sprite_sheet(self, texture, frame_width, frame_height, num_frames):
         sprite_sheet = pygame.image.load(texture).convert_alpha()

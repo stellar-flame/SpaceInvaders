@@ -1,7 +1,7 @@
 import pygame
 from game.sprite import SpriteNode
 from pygame import Vector2
-from game.bullet import AlienBullet
+from game.bullet import Bullet
 import game.utils
 
 
@@ -9,7 +9,8 @@ class AlienShip(SpriteNode):
     ALIEN_SPAWN_EVENT = pygame.USEREVENT + 1
 
     def __init__(self):
-        super().__init__(Vector2(16, 0), "assets/alien.png")
+        super().__init__(Vector2(16, 0))
+        self.set_texture("assets/alien.png")
         self.speed = 5
         self.direction = -1
 
@@ -24,4 +25,5 @@ class AlienShip(SpriteNode):
         self.update_pixel_pos()
 
     def fire(self):
-        return AlienBullet(game.utils.pixel_to_grid(self.rect.center))
+        return Bullet.create_alien_ship_bullet(game.utils.pixel_to_grid(self.rect.center))
+

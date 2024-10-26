@@ -1,13 +1,14 @@
 from game.sprite import SpriteNode
 import pygame
 from pygame import Vector2
-from game.bullet import SpaceShipBullet
+from game.bullet import Bullet
 import game.utils
 
 
 class SpaceShip(SpriteNode):
     def __init__(self):
-        super().__init__(Vector2(0, 8), "assets/ship.png")
+        super().__init__(Vector2(0, 8))
+        self.set_texture("assets/ship.png")
         self.move_command = Vector2(0, 0)
 
     def process_input(self, event):
@@ -27,4 +28,4 @@ class SpaceShip(SpriteNode):
         self.move_command = Vector2(0, 0)
 
     def shoot(self):
-        return SpaceShipBullet(game.utils.pixel_to_grid(self.rect.center))
+        return Bullet.create_space_ship_bullet(game.utils.pixel_to_grid(self.rect.center))

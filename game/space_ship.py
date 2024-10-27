@@ -2,7 +2,7 @@ from game.sprite import SpriteNode
 import pygame
 from pygame import Vector2
 from game.bullet import Bullet
-import game.utils
+from game.utils import Utils
 
 
 class SpaceShip(SpriteNode):
@@ -28,4 +28,4 @@ class SpaceShip(SpriteNode):
         self.move_command = Vector2(0, 0)
 
     def shoot(self):
-        return Bullet.create_space_ship_bullet(game.utils.pixel_to_grid(self.rect.center))
+        return Bullet.create_space_ship_bullet(Utils.pixel_to_grid(self.rect.center))

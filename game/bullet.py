@@ -8,11 +8,12 @@ class Bullet(SpriteNode):
         self.speed = 5
         self.direction = 1
         self.image = None
-        self.rect = None  
+        self.rect = None
 
     def update(self, boundaries, delta):
         self.grid_pos.y += self.direction * self.speed * delta
-        if self.grid_pos.y < 0:
+        if ((self.direction == -1 and self.grid_pos.y < 0) or
+                (self.direction == 1 and (boundaries.y - self.grid_pos.y) < 0.5)):
             self.kill()
         self.update_pixel_pos()
 

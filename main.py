@@ -1,24 +1,17 @@
-import os
 import pygame
-from pygame.math import Vector2
 from game.scene import Scene
-from settings import CELL_SIZE
-from settings import WORLD_SIZE
+from game.game_manager import GameManager
+import settings
 
 
 class Game:
-    def grid_to_pixel(grid_pos: Vector2):
-        return grid_pos.elementwise() * CELL_SIZE
-
-    def pixel_to_grid(pixel_pos: Vector2):
-        return Vector2(pixel_pos).elementwise() / CELL_SIZE
-
     def __init__(self):
         pygame.init()
-        self.window_size = WORLD_SIZE.elementwise() * CELL_SIZE
+        self.window_size = settings.WORLD_SIZE.elementwise() * settings.CELL_SIZE
         self.window = pygame.display.set_mode((int(self.window_size.x), int(self.window_size.y)))
 
-        self.scene = Scene()
+        self.game_manager = GameManager(3)
+        self.scene = Scene(self.game_manager)
 
         # Loop properties
         self.clock = pygame.time.Clock()
@@ -33,11 +26,14 @@ class Game:
                 self.scene.process_input(event)
 
     def update(self, delta_time):
-        self.scene.update(WORLD_SIZE, delta_time)
+        self.scene.update(settings.PLAY_AREA, delta_time)
+        if self.game_manager.lives_left < 0:
+            self.running = False
 
     def render(self):
         self.window.fill((0, 0, 0))
         self.scene.render(self.window)
+        self.game_manager.render(self.window)
         pygame.display.update()
 
     def run(self):

@@ -2,7 +2,7 @@ import pygame
 from game.sprite import SpriteNode
 from pygame import Vector2
 from game.bullet import Bullet
-import game.utils
+from game.utils import Utils
 
 
 class AlienShip(SpriteNode):
@@ -25,5 +25,5 @@ class AlienShip(SpriteNode):
         self.update_pixel_pos()
 
     def fire(self):
-        return Bullet.create_alien_ship_bullet(game.utils.pixel_to_grid(self.rect.center))
+        return Bullet.create_alien_ship_bullet(Utils.pixel_to_grid(self.rect.center))
 

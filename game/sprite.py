@@ -1,6 +1,6 @@
 import pygame
 from pygame.sprite import Sprite
-import game.utils
+from game.utils import Utils
 
 
 class SpriteNode(Sprite):
@@ -14,7 +14,7 @@ class SpriteNode(Sprite):
         self.update_pixel_pos()
 
     def update_pixel_pos(self):
-        self.rect.topleft = game.utils.grid_to_pixel(self.grid_pos)
+        self.rect.topleft = Utils.grid_to_pixel(self.grid_pos)
 
     def process_input(self, event):
         pass

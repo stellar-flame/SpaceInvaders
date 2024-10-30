@@ -10,7 +10,7 @@ class GameOverScene(BaseScene):
         super().__init__(game_manager)
 
     def process_input(self, event):
-        if event.type == pygame.KEYDOWN:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
             self.game_manager.mark_for_reset()
 
     def update(self, delta, boundaries=None):
@@ -28,8 +28,8 @@ class GameOverScene(BaseScene):
         window.blit(game_over_text, text_rect)
 
         # Display restart message
-        restart_text = small_font.render("Press any key to Restart", True, (255, 255, 255))
-        text_rect = game_over_text.get_rect(center=(center_x, center_y+100))
+        restart_text = small_font.render("Press R to Restart", True, (255, 255, 255))
+        text_rect = restart_text.get_rect(center=(center_x, center_y+50))
 
         window.blit(restart_text, text_rect)
 

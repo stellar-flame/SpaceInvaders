@@ -10,6 +10,9 @@ class SpaceShip(SpriteNode):
         super().__init__(Vector2(0, 8))
         self.set_texture("assets/ship.png")
         self.move_command = Vector2(0, 0)
+        self.explosion = None
+        self.cool_down_time = 700
+        self.last_shot_time = pygame.time.get_ticks()
 
     def process_input(self, event):
         if event.key == pygame.K_RIGHT:
@@ -28,4 +31,9 @@ class SpaceShip(SpriteNode):
         self.move_command = Vector2(0, 0)
 
     def shoot(self):
-        return Bullet.create_space_ship_bullet(Utils.pixel_to_grid(self.rect.center))
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot_time >= self.cool_down_time:
+            self.last_shot_time = current_time
+            return Bullet.create_space_ship_bullet(Utils.pixel_to_grid(self.rect.center))
+        else:
+            return None

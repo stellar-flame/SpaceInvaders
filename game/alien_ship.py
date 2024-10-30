@@ -6,13 +6,12 @@ from game.utils import Utils
 
 
 class AlienShip(SpriteNode):
-    ALIEN_SPAWN_EVENT = pygame.USEREVENT + 1
-    ALIEN_REACHED_GROUND = pygame.USEREVENT + 1
+    ALIEN_SPAWN_EVENT = Utils.next_event()
 
     def __init__(self):
         super().__init__(Vector2(16, 0))
         self.set_texture("assets/alien.png")
-        self.speed = 5
+        self.speed = 8
         self.direction = -1
 
     def update(self, boundaries, delta):

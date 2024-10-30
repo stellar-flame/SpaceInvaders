@@ -21,6 +21,7 @@ class SpriteNode(Sprite):
 
 
 class AnimatedSprite(SpriteNode):
+    ANIMATION_COMPLETE_EVENT = Utils.next_event()
     def __init__(self, grid_pos, texture, frame_rate, frame_width, frame_height, num_frames, loop=True):
         super().__init__(grid_pos)
         self.images = self.load_sprite_sheet(texture, frame_width, frame_height, num_frames)
@@ -45,6 +46,7 @@ class AnimatedSprite(SpriteNode):
         self.timer += 1
         if self.timer >= self.frame_rate:
             if not self.loop and self.current_frame == len(self.images) - 1:
+                pygame.event.post(pygame.event.Event(AnimatedSprite.ANIMATION_COMPLETE_EVENT, {"sprite": self}))
                 self.kill()
             else:
                 # Reset the timer and move to the next frame

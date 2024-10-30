@@ -23,18 +23,28 @@ class Scene(BaseScene):
 
         self.space_ship = SpaceShip()
         self.player_sprites.add(self.space_ship)
-
-        pygame.time.set_timer(AlienShip.ALIEN_SPAWN_EVENT, 1000)
+        self.alien_spawn_freq = 1000
+        pygame.time.set_timer(AlienShip.ALIEN_SPAWN_EVENT, self.alien_spawn_freq)
 
     def process_input(self, event):
         if event.type == AlienShip.ALIEN_SPAWN_EVENT:
             alien_ship = AlienShip()
             self.alien_sprites.add(alien_ship)
+        elif event.type == AnimatedSprite.ANIMATION_COMPLETE_EVENT and event.sprite == self.space_ship.explosion:
+                self.start_next_life()
         elif self.space_ship and event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                self.bullet_sprites.add(self.space_ship.shoot())
+                bullet = self.space_ship.shoot()
+                if bullet:
+                    self.bullet_sprites.add(bullet)
             else:
                 self.space_ship.process_input(event)
+
+    def start_next_life(self):
+        self.game_manager.update_lives_left()
+        if not self.game_manager.is_over():
+            self.space_ship = SpaceShip()
+            self.player_sprites.add(self.space_ship)
 
     def update(self, delta, boundaries=None):
         self.alien_hits_space_ship_collision()
@@ -55,7 +65,7 @@ class Scene(BaseScene):
 
     def alien_firing_mechanism(self):
         # Choose a random alien to fire with some probability
-        if random.random() < 0.05:  # 1% chance per frame that an alien fires
+        if random.random() < 0.02:  # 1% chance per frame that an alien fires
             alien = random.choice(self.alien_sprites.sprites())
             self.alien_bullet_sprites.add(alien.fire())
 
@@ -63,28 +73,30 @@ class Scene(BaseScene):
     def alien_hits_space_ship_collision(self):
         collisions = pygame.sprite.groupcollide(self.player_sprites, self.alien_sprites, True, True)
         for player, alien in collisions.items():
-            self.create_exploding_sprite(alien[0].grid_pos)
-            self.game_manager.end_game()
-
+            self.space_ship.explosion = self.create_exploding_sprite(alien[0].grid_pos)
 
     def bullets_hits_alien_collisions(self):
         collisions = pygame.sprite.groupcollide(self.bullet_sprites, self.alien_sprites, True, True)
         for bullet, alien in collisions.items():
             self.create_exploding_sprite(alien[0].grid_pos)
             self.game_manager.update_score()
+            if self.game_manager.score > 0 and self.game_manager.score % 500 == 0:
+                self.update_alien_spawn_freq()
+
+    def update_alien_spawn_freq(self):
+        self.alien_spawn_freq = max(self.alien_spawn_freq - 150, 500)
+        pygame.time.set_timer(AlienShip.ALIEN_SPAWN_EVENT, self.alien_spawn_freq)
 
     def bullet_hits_space_ship_collisions(self):
-        collisions = pygame.sprite.spritecollide(self.space_ship, self.alien_bullet_sprites, True)
+        collisions = pygame.sprite.groupcollide(self.player_sprites, self.alien_bullet_sprites, True, True)
         if len(collisions) > 0:
-            self.create_exploding_sprite(self.space_ship.grid_pos)
-            self.game_manager.update_lives_left()
-            self.space_ship = SpaceShip()
-            self.player_sprites.add(self.space_ship)
+            self.space_ship.explosion = self.create_exploding_sprite(self.space_ship.grid_pos)
 
     def create_exploding_sprite(self, grid_pos):
         explosion = AnimatedSprite(grid_pos, "assets/Explosion.png", 10,
                                    64, 64, 3, False)
         self.explosion_sprites.add(explosion)
+        return explosion
 
     def render(self, window):
         pygame.draw.line(window, (255, 255, 255), Utils.grid_to_pixel(Vector2(0, 9)),

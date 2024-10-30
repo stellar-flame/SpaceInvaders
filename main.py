@@ -1,5 +1,6 @@
 import pygame
 from game.scene import Scene
+from game.game_over_scene import GameOverScene
 from game.game_manager import GameManager
 import settings
 
@@ -12,28 +13,41 @@ class Game:
 
         self.game_manager = GameManager(3)
         self.scene = Scene(self.game_manager)
+        self.game_over_scene = GameOverScene(self.game_manager)
 
         # Loop properties
         self.clock = pygame.time.Clock()
         self.running = True
+        self.pause_count = 0
 
     def process_input(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
                 break
+            elif self.game_manager.is_over():
+                self.game_over_scene.process_input(event)
             else:
                 self.scene.process_input(event)
 
     def update(self, delta_time):
-        self.scene.update(settings.PLAY_AREA, delta_time)
-        if self.game_manager.lives_left < 0:
-            self.running = False
+        if self.game_manager.is_over():
+            self.game_over_scene.update(delta_time)
+        else:
+            if self.game_manager.is_marked_for_reset():
+                self.scene = Scene(self.game_manager)
+                self.game_manager.reset()
+            self.scene.update(delta_time, settings.PLAY_AREA)
 
     def render(self):
         self.window.fill((0, 0, 0))
-        self.scene.render(self.window)
-        self.game_manager.render(self.window)
+
+        if self.game_manager.is_over():
+            self.game_over_scene.render(self.window)
+        else:
+            self.scene.render(self.window)
+            self.game_manager.render(self.window)
+
         pygame.display.update()
 
     def run(self):

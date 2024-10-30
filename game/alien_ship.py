@@ -7,6 +7,7 @@ from game.utils import Utils
 
 class AlienShip(SpriteNode):
     ALIEN_SPAWN_EVENT = pygame.USEREVENT + 1
+    ALIEN_REACHED_GROUND = pygame.USEREVENT + 1
 
     def __init__(self):
         super().__init__(Vector2(16, 0))
@@ -26,4 +27,3 @@ class AlienShip(SpriteNode):
 
     def fire(self):
         return Bullet.create_alien_ship_bullet(Utils.pixel_to_grid(self.rect.center))
-
